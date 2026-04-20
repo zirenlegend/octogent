@@ -290,14 +290,14 @@ export const Terminal = ({
           if (event.type !== "keydown") return true;
 
           // Ctrl+C：有选区时复制，无选区时发送中断信号
-          if (event.ctrlKey && event.key === "c") {
+          if (event.ctrlKey && !event.shiftKey && event.key === "c") {
             if (terminal.hasSelection()) {
               const selection = terminal.getSelection();
-              navigator.clipboard.writeText(selection);
+              try { navigator.clipboard.writeText(selection); } catch {}
               terminal.clearSelection();
-              return false; // 阻止 xterm.js 默认处理（发送 ETX）
+              return false;
             }
-            return true; // 无选区时允许正常处理（发送中断信号）
+            return true;
           }
 
           // Ctrl+V：让浏览器原生 paste 事件处理粘贴，return false 仅阻止 xterm.js 的 keydown 处理
@@ -305,11 +305,11 @@ export const Terminal = ({
             return false;
           }
 
-          // Ctrl+Shift+C：强制复制（兼容 VS Code 习惯）
+          // Ctrl+Shift+C：强制复制
           if (event.ctrlKey && event.shiftKey && event.key === "C") {
             const selection = terminal.getSelection();
             if (selection) {
-              navigator.clipboard.writeText(selection);
+              try { navigator.clipboard.writeText(selection); } catch {}
               terminal.clearSelection();
             }
             return false;
