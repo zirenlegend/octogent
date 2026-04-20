@@ -12,3 +12,4 @@
 **/coverage/
 
 .octogent
+.playwright-mcp/
