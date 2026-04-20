@@ -284,6 +284,55 @@ export const Terminal = ({
         fitAddon.fit();
         terminal.focus();
 
+        // 自定义键盘事件处理 - 实现 Ctrl+C/Ctrl+V 复制粘贴
+        terminal.attachCustomKeyEventHandler((event) => {
+          // 只在 keydown 时处理，避免 keyup 重复触发
+          if (event.type !== "keydown") return true;
+
+          // Ctrl+C：有选区时复制，无选区时发送中断信号
+          if (event.ctrlKey && event.key === "c") {
+            if (terminal.hasSelection()) {
+              const selection = terminal.getSelection();
+              navigator.clipboard.writeText(selection);
+              terminal.clearSelection();
+              return false; // 阻止 xterm.js 默认处理（发送 ETX）
+            }
+            return true; // 无选区时允许正常处理（发送中断信号）
+          }
+
+          // Ctrl+V：粘贴剪切板内容
+          if (event.ctrlKey && event.key === "v") {
+            navigator.clipboard.readText().then((text) => {
+              if (text) {
+                terminal.paste(text);
+              }
+            });
+            return false; // 阻止 xterm.js 默认处理
+          }
+
+          // Ctrl+Shift+C：强制复制（兼容 VS Code 习惯）
+          if (event.ctrlKey && event.shiftKey && event.key === "C") {
+            const selection = terminal.getSelection();
+            if (selection) {
+              navigator.clipboard.writeText(selection);
+              terminal.clearSelection();
+            }
+            return false;
+          }
+
+          // Ctrl+Shift+V：强制粘贴（兼容 VS Code 习惯）
+          if (event.ctrlKey && event.shiftKey && event.key === "V") {
+            navigator.clipboard.readText().then((text) => {
+              if (text) {
+                terminal.paste(text);
+              }
+            });
+            return false;
+          }
+
+          return true; // 其他按键正常处理
+        });
+
         try {
           const { Unicode11Addon } = await import("xterm-addon-unicode11");
           const unicode11Addon = new Unicode11Addon();
@@ -321,9 +370,7 @@ export const Terminal = ({
           event.stopPropagation();
           terminal.scrollLines(lines);
         };
-        wheelListenerTarget.addEventListener("pointerdown", onPointerDown, {
-          capture: true,
-        });
+        wheelListenerTarget.addEventListener("pointerdown", onPointerDown);
         viewportWheelTarget.addEventListener("wheel", onWheel, {
           passive: false,
         });
@@ -390,7 +437,7 @@ export const Terminal = ({
         terminalRef.current = terminal;
         fitAddonRef.current = fitAddon;
         cleanupTerminal = () => {
-          wheelListenerTarget.removeEventListener("pointerdown", onPointerDown, true);
+          wheelListenerTarget.removeEventListener("pointerdown", onPointerDown);
           viewportWheelTarget.removeEventListener("wheel", onWheel);
           if (resizeDebounceTimer !== null) {
             window.clearTimeout(resizeDebounceTimer);
