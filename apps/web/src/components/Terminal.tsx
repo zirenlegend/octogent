@@ -300,14 +300,9 @@ export const Terminal = ({
             return true; // 无选区时允许正常处理（发送中断信号）
           }
 
-          // Ctrl+V：粘贴剪切板内容
-          if (event.ctrlKey && event.key === "v") {
-            navigator.clipboard.readText().then((text) => {
-              if (text) {
-                terminal.paste(text);
-              }
-            });
-            return false; // 阻止 xterm.js 默认处理
+          // Ctrl+V：让浏览器原生 paste 事件处理粘贴，return false 仅阻止 xterm.js 的 keydown 处理
+          if (event.ctrlKey && !event.shiftKey && event.key === "v") {
+            return false;
           }
 
           // Ctrl+Shift+C：强制复制（兼容 VS Code 习惯）
@@ -320,13 +315,8 @@ export const Terminal = ({
             return false;
           }
 
-          // Ctrl+Shift+V：强制粘贴（兼容 VS Code 习惯）
+          // Ctrl+Shift+V：同 Ctrl+V，由浏览器原生 paste 事件处理
           if (event.ctrlKey && event.shiftKey && event.key === "V") {
-            navigator.clipboard.readText().then((text) => {
-              if (text) {
-                terminal.paste(text);
-              }
-            });
             return false;
           }
 
